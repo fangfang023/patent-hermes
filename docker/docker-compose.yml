@@ -1,0 +1,28 @@
+services:
+  hermes-agent:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: patent-hermes-agent:latest
+    container_name: patent-hermes-agent
+    restart: unless-stopped
+    # 端口映射：容器内 hermes 仍监听 9119/8765，对外用空闲端口避开本机和其他容器
+    # DASHBOARD_HOST_PORT / GATEWAY_HOST_PORT 在 .env 中可改
+    ports:
+      - "${DASHBOARD_HOST_PORT:-9130}:9119"   # Hermes Dashboard
+      - "${GATEWAY_HOST_PORT:-8790}:8765"     # Gateway / Feishu Webhook
+      - "${OUTPUT_HOST_PORT:-9131}:9131"       # Output file server
+    volumes:
+      # 整个项目目录挂载到容器内（上级目录 = patent-hermes-agent/）
+      - ..:/app/patent-hermes-agent
+      # Hermes 状态持久化（config.yaml / sessions / state.db / auth.json 等）
+      - hermes-home:/root/.hermes
+    env_file:
+      - .env
+    stdin_open: true
+    tty: true
+    working_dir: /app/patent-hermes-agent
+
+volumes:
+  hermes-home:
+    name: patent-hermes-home

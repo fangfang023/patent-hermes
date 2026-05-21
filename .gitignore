@@ -1,0 +1,25 @@
+.DS_Store
+*.tmp
+*.log
+.idea/
+.vscode/
+.hermes/cache/
+.hermes/sessions/
+node_modules/
+__pycache__/
+
+# Docker 部署敏感配置
+docker/.env
+
+# 生成产物不纳入版本管理
+output/*
+!output/.gitkeep
+
+# Hook 运行日志不进版本管理
+hooks/logs/
+
+# 项目本地运行日志（dashboard 等）
+.logs/
+
+# 本地运行临时文件
+generated_docs/

@@ -1,0 +1,13 @@
+# .dockerignore — 放在项目根目录，减小 Docker build context 传输量
+.git/
+output/
+generated_docs/
+.logs/
+.idea/
+.claude/
+node_modules/
+__pycache__/
+*.csv
+*.db
+*.tmp
+.DS_Store
