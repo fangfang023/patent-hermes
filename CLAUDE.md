@@ -67,7 +67,7 @@ cd docker && cp .env.example .env   # 填入 API Key 和飞书机器人配置
 ./docker/start.sh                   # 构建镜像并启动容器
 ```
 
-### 端口（与 courseware 项目不冲突）
+### 端口
 | 服务 | 容器内 | 宿主机默认 |
 |------|-------|----------|
 | Dashboard | 9119 | 9130 |
@@ -115,8 +115,3 @@ Skill(skill="skill-name")
 - 输出目录：`output/` 或 `generated_docs/`
 - 命名格式：`[文档类型]_[创意简述]_[时间戳].md`
 - 批量专利目录结构：`output/创意_{timestamp}/创意N/` 下 7 个文件
-
-## 注意事项
-
-- 课程件项目（courseware-hermes-agent）与本项目共用同一台机器，端口已分开，可同时运行 Docker 容器
-- 本地运行时两者共用 `~/.hermes/` 配置目录，`scripts/start.sh` 会覆盖对方配置，**建议本地测试时只启动一个项目**

@@ -75,7 +75,6 @@ cd docker && cp .env.example .env
 | Gateway | 8790 | Gateway / 飞书 Webhook |
 | Output Server | 9131 | 输出文件 HTTP 服务 |
 
-端口已避开 courseware 项目（9120/8780/9121），可同时运行。
 
 ## Agent 体系
 
@@ -94,5 +93,4 @@ cd docker && cp .env.example .env
 ## 配置说明
 
 - 模型：MiniMax-M2.7 / minimax-cn provider
-- 飞书：独立机器人（与 courseware 项目不是同一个）
 - 详见 [docker/.env.example](docker/.env.example)

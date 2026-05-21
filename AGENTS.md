@@ -57,30 +57,30 @@
   ├─ 显式指定 Agent/Skill？ → 直接路由
   │
   ├─ 讨论/咨询/提问？
-  │    → 主 Claude 直接回答（不调用 Agent 或 Skill）
+  │    → 主 Agent 直接回答（不调用 delegate_task 或 Skill）
   │
   ├─ 简单修改？
-  │    → 主 Claude 直接操作
+  │    → 主 Agent 直接操作
   │
   ├─ 审查/答复/驳回复审？
-  │    → prosecution-agent
+  │    → delegate_task(goal="答复审查意见。第一步：Read .../agents/prosecution-agent.md...")
   │
   ├─ 交底书相关？
-  │    → disclosure-agent
+  │    → delegate_task(goal="生成交底书。第一步：Read .../agents/disclosure-agent.md...")
   │
   ├─ 专利撰写相关？
-  │    → patent-drafting-agent
-  │    → 完成后自动调用 patent-traceability-mapping（传入权利要求书+说明书+原始输入文件路径）
+  │    → delegate_task(goal="撰写专利。第一步：Read .../agents/patent-drafting-agent.md...")
+  │    → 完成后自动追加溯源映射表 delegate_task
   │
   ├─ 批量专利？
-  │    → batch-patent-generator（阶段1）
-  │      → single-creative-generator（阶段2，逐个创意）
+  │    → 阶段1: delegate_task(goal="批量生成。第一步：Read .../agents/batch-patent-generator.md...")
+  │    → 阶段2: 逐个 delegate_task(goal="单创意生成。第一步：Read .../agents/single-creative-generator.md...")
   │
   ├─ 单次质疑/审核？
-  │    → 对应 Agent
+  │    → 对应 delegate_task(goal 中指引 Read 对应 agent .md)
   │
   └─ 用户说"快速""草稿""初稿"？
-       → 主 Claude + 对应 Skill 直出
+       → 主 Agent + 对应 Skill 直出（不走 delegate_task）
 ```
 
 ## 4. Agent / Skill 体系
@@ -148,75 +148,153 @@
 | interactive-report | 交互式报告 |
 | skill-creator | Skill 创建器 |
 
-## 5. 分阶段调用通用规则
+## 5. delegate_task 调用规则
 
-对耗时较长的 agent 任务，采用分阶段调用模式，避免用户长时间无反馈：
+### 5.1 核心原则
 
-1. **读取 phase 表**：Read 目标 agent 的 `agents/{agent-name}.md`，提取 Phase 参数说明
-2. **初始化 TodoWrite**：按 phase 表中的每个 phase 创建一个 todo 项
-3. **逐个 phase 调用**：`Task(subagent_type="{agent-name}", prompt="phase=X, ...前置文件路径...")`
-4. **更新进度**：每个 phase 返回后立即 TodoWrite 标记 completed
-5. **传递上下文**：从返回的 `PHASE_RESULT` 中提取 `output_files` 路径，传入下一个 phase 的 prompt
-6. **错误处理**：单个 phase 失败时记录错误，询问用户是否重试或跳过
+Hermes 原生不支持"Agent 定义文件"注册机制。`agents/*.md` 是**编排指令模板库**，不是 Hermes 的注册入口。
+
+调用 `delegate_task` 时遵循以下规则：
+
+- **goal 字段**：写任务目标 + 指引子代理去 Read 对应的 agent .md 文件
+- **context 字段**：只写必要的数据（用户输入内容、文件路径、参数），**不写编排指令模板**
+- 子代理会在独立窗口中自己 Read 指令文件，然后严格按指令执行
+
+### 5.2 标准调用模板
+
+```python
+delegate_task(
+    goal="{任务目标描述}。第一步：Read {工作目录}/agents/{agent-name}.md，严格按其中的编排流程执行。",
+    context="用户输入：{创意描述/审查意见/交底素材}。工作目录：{PROJECT_ROOT}。输出目录：output/",
+    toolsets=["terminal", "file"],
+    role="orchestrator"  # 仅当子代理需要继续派发子任务时使用
+)
+```
+
+### 5.3 各 Agent 调用示例
+
+**交底书**：
+```python
+delegate_task(
+    goal="生成技术交底书。第一步：Read /app/patent-hermes-agent/agents/disclosure-agent.md，严格按其中的编排流程执行。",
+    context="用户创意描述：{创意内容}。工作目录：/app/patent-hermes-agent。输出目录：output/",
+    toolsets=["terminal", "file"],
+    role="orchestrator"
+)
+```
+
+**专利撰写**：
+```python
+delegate_task(
+    goal="撰写全套专利申请文件。第一步：Read /app/patent-hermes-agent/agents/patent-drafting-agent.md，严格按其中的编排流程执行。phase={claims|specification|abstract|full}。",
+    context="前置文件：{交底书/技术方案路径}。工作目录：/app/patent-hermes-agent。输出目录：output/",
+    toolsets=["terminal", "file"],
+    role="orchestrator"
+)
+```
+
+**审查答复**：
+```python
+delegate_task(
+    goal="答复审查意见。第一步：Read /app/patent-hermes-agent/agents/prosecution-agent.md，严格按其中的编排流程执行。",
+    context="审查意见文件：{OA文件路径}。原始权利要求：{权利要求书路径}。工作目录：/app/patent-hermes-agent。输出目录：output/",
+    toolsets=["terminal", "file"],
+    role="orchestrator"
+)
+```
+
+**质疑**：
+```python
+delegate_task(
+    goal="质疑文档。第一步：Read /app/patent-hermes-agent/agents/patent-challenger-agent.md，严格按其中的质疑流程执行。",
+    context="待质疑文件：{交底书/权利要求书路径}。工作目录：/app/patent-hermes-agent。输出目录：output/",
+    toolsets=["terminal", "file"]
+)
+```
+
+**审核**：
+```python
+delegate_task(
+    goal="审核文档质量。第一步：Read /app/patent-hermes-agent/agents/document-reviewer-agent.md，严格按其中的审核流程执行。",
+    context="待审核文件：{文档路径}。工作目录：/app/patent-hermes-agent。输出目录：output/",
+    toolsets=["terminal", "file"]
+)
+```
+
+### 5.4 工作目录路径说明
+
+| 运行环境 | PROJECT_ROOT（agent .md 的 Read 路径前缀） |
+|---------|------------------------------------------|
+| Docker 容器 | `/app/patent-hermes-agent` |
+| 本地终端 | 项目实际绝对路径（如 `/Users/ff/PycharmProjects/patent/patent-hermes`） |
+
+### 5.5 role 参数选择
+
+| Agent | role | 原因 |
+|-------|------|------|
+| disclosure-agent | `orchestrator` | 需要派发质疑子任务 |
+| patent-drafting-agent | `orchestrator` | 需要派发质疑子任务 |
+| prosecution-agent | `orchestrator` | 可能需要派发法律查找子任务 |
+| batch-patent-generator | `orchestrator` | 需要派发论文生成子任务 |
+| single-creative-generator | `orchestrator` | 需要派发多个 Skill 子任务 |
+| patent-challenger-agent | `leaf`（默认） | 单步质疑，不需要继续派发 |
+| document-reviewer-agent | `leaf`（默认） | 单步审核，不需要继续派发 |
 
 ## 6. 专利撰写后自动串联溯源映射表
 
-当 patent-drafting-agent 完成全套专利文件生成后（phase=full 返回成功，或 phase=abstract 返回成功），**自动执行**以下步骤：
+当 patent-drafting-agent 子代理返回的摘要中包含全套专利文件路径时（phase=full 或 phase=abstract 成功），主 Agent **自动追加一步**：
 
-1. 从 `PHASE_RESULT` 中提取 `output_files`（权利要求书、说明书文件路径）
-2. 确定原始输入文件路径（交底书/技术方案）
-3. 调用溯源映射表 Skill：
-   ```
-   主 Claude 直接使用 Skill(skill="patent-traceability-mapping")，
-   在 prompt 中传入三份文件路径
-   ```
-4. 溯源映射表在独立的上下文中生成，不挤占撰写阶段的 context
-5. 将映射表文件路径追加到最终交付清单中
+```python
+delegate_task(
+    goal="生成权利要求溯源映射表。第一步：Read /app/patent-hermes-agent/skills/patent-traceability-mapping/SKILL.md，严格按其中的流程执行。传入权利要求书、说明书、原始输入文件三份路径。",
+    context="权利要求书路径：{claims_path}。说明书路径：{spec_path}。原始输入路径：{input_path}。工作目录：/app/patent-hermes-agent。输出目录：output/",
+    toolsets=["terminal", "file"]
+)
+```
 
 **注意**：
 - 如果用户说"快速""草稿""初稿"，跳过溯源映射表自动串联
-- 如果用户主动要求"生成溯源表""映射表"，直接调用 Skill 而不经过 Agent
+- 如果用户主动要求"生成溯源表""映射表"，直接 delegate_task 而不经过 patent-drafting-agent
 
 ## 7. 批量专利编排
 
 当用户意图为批量专利生成时，按两阶段执行：
 
-**阶段1**：`Task(subagent_type="batch-patent-generator", ...)` → 返回 `BATCH_PATENT_RESULT` 结构化创意清单（包含 BASE_DIR、TIMESTAMP、PAPER_FILES、CREATIVES）。
+**阶段1**：派发 batch-patent-generator 生成论文 + 创意清单
 
-**阶段2**：逐个创意分发（主 Claude 编排）
-
-⚠️ 阶段2 开始前，必须先初始化 TodoWrite 追踪列表，每个创意一个 todo 项。
-
-对每个创意**逐个**调用 Task（不要并行，一次一个）：
-
+```python
+delegate_task(
+    goal="批量生成论文并挖掘创意。第一步：Read /app/patent-hermes-agent/agents/batch-patent-generator.md，严格按其中的流程执行。返回创意清单结构化数据。",
+    context="用户创意描述：{创意内容}。创意数量：{N}。工作目录：/app/patent-hermes-agent。输出目录：output/",
+    toolsets=["terminal", "file"],
+    role="orchestrator"
+)
 ```
-FOR 每个创意 IN CREATIVES:
-  TodoWrite: 创意{创意.id} → in_progress
 
-  # 断点续传：检查是否已完成
-  已有文件 = Bash("ls {BASE_DIR}/创意{创意.id}/*.md 2>/dev/null | wc -l")
-  IF 已有文件 >= 7:
-    TodoWrite: 创意{创意.id} → completed
-    CONTINUE
+阶段1 返回后，从子代理摘要中提取创意清单（包含 BASE_DIR、TIMESTAMP、PAPER_FILES、CREATIVES）。
 
-  Bash("mkdir -p {BASE_DIR}/创意{创意.id}/")
+**阶段2**：逐个创意派发 single-creative-generator
 
-  Task(
-    subagent_type="single-creative-generator",
-    description="创意{创意.id}专利方案生成",
-    prompt="创意编号/标题/技术方向/创新点/商业价值、用户原始创意、路径参数(base_dir/timestamp/创意目录)、论文文件路径"
-  )
+⚠️ 阶段2 开始前，主 Agent 必须先梳理创意清单，然后逐个派发子代理。
 
-  TodoWrite: 创意{创意.id} → completed
-END FOR
+对每个创意**逐个**调用 delegate_task（不要并行，一次一个）：
+
+```python
+# 对每个创意逐个执行：
+delegate_task(
+    goal="为创意{创意编号}生成全套专利+方案。第一步：Read /app/patent-hermes-agent/agents/single-creative-generator.md，严格按其中的流程执行。",
+    context="创意编号：{N}。创意标题：{title}。技术方向：{direction}。创新点：{innovation}。商业价值：{value}。用户原始创意：{原始描述}。论文文件路径：{paper_paths}。工作目录：/app/patent-hermes-agent。输出目录：{BASE_DIR}/创意{N}/",
+    toolsets=["terminal", "file"],
+    role="orchestrator"
+)
 ```
 
 **关键要求**：
-- 每个 Task 独立拥有完整上下文窗口，互不影响
+- 每个子代理独立拥有完整上下文窗口，互不影响
 - 逐个执行，不要并行分发
-- 单个创意 Task 失败时记录错误，继续处理下一个
-- 每个 Task 完成后必须立即更新 TodoWrite 标记 completed
-- Task 返回的摘要仅供判断状态，不要重新输出或总结其内容
+- 单个创意子代理失败时记录错误，继续处理下一个
+- 子代理返回的摘要仅供判断状态，不要重新输出或总结其内容
+- 断点续传：派发前先检查目标目录是否已有 ≥7 个 .md 文件，已有则跳过
 
 ## 8. 输出契约
 
@@ -254,7 +332,7 @@ output/
 2. **不臆造法律**：审查指南内容必须来自 `knowledge/guidelines/`；权利要求规则必须来自 `knowledge/references/`；审核标准必须来自 `knowledge/review-standards/`。
 3. **占位符必须替换**：`{发明名称}` / `{技术领域}` / `{{parent.content}}` 等模板占位符不得原样出现在输出文件中。
 4. **路径锁定**：写入路径必须以 `output/` 或 `generated_docs/` 为前缀，禁止越界。
-5. **Worker 不嵌套派发**：被 Agent 调用的 Skill 不得再发起 `delegate_task`。
+5. **leaf 子代理不嵌套派发**：`role="leaf"` 的子代理不能再发起 `delegate_task`；需要派发子任务时必须指定 `role="orchestrator"` 并确保 `delegation.max_spawn_depth ≥ 2`。
 6. **禁止"备用文件/占位内容"反模式**：如果 Worker 因截断/超时/网络抖动失败，**只能真正重试**，**绝对不允许**写"备用文件"/"占位内容"/"标准模板占位"等假文本来骗过质量检查。
 7. **重试上限**：Agent 单个阶段重试 ≤ 2 次；仍失败 → 单阶段标 `partial`，**不写假文档**。
 8. **质疑必须尖锐**：patent-challenger-agent 的质疑必须从审查员视角出发，指出实质缺陷，不允许温和/敷衍的质疑。
