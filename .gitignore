@@ -18,8 +18,9 @@ output/*
 # Hook 运行日志不进版本管理
 hooks/logs/
 
+
 # 项目本地运行日志（dashboard 等）
 .logs/
 
 # 本地运行临时文件
-generated_docs/
+workspace/
