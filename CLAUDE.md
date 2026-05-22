@@ -57,6 +57,7 @@ patent-hermes/
 
 ### 本地启动
 ```bash
+cd scripts && cp .env.example .env   # 配置端口（首次）
 ./scripts/start.sh    # 启动 Hermes + Dashboard + Gateway + Output Server
 ./scripts/stop.sh     # 停止所有服务
 ```
@@ -67,12 +68,14 @@ cd docker && cp .env.example .env   # 填入 API Key 和飞书机器人配置
 ./docker/start.sh                   # 构建镜像并启动容器
 ```
 
-### 端口
-| 服务 | 容器内 | 宿主机默认 |
-|------|-------|----------|
-| Dashboard | 9119 | 9130 |
-| Gateway | 8765 | 8790 |
-| Output Server | 9131 | 9131 |
+### 端口配置
+所有端口均在 `scripts/.env`（本地）或 `docker/.env`（Docker）中集中定义，脚本和 compose 文件中不硬编码任何端口号。
+
+| 服务 | 本地变量 | Docker 容器内变量 | Docker 宿主机映射变量 |
+|------|---------|-----------------|---------------------|
+| Dashboard | `DASHBOARD_PORT` | `DASHBOARD_CONTAINER_PORT` | `DASHBOARD_HOST_PORT` |
+| Gateway | `GATEWAY_PORT`（本地无效，内置默认 8765） | `GATEWAY_CONTAINER_PORT` | `GATEWAY_HOST_PORT` |
+| Output Server | `OUTPUT_PORT` | `OUTPUT_CONTAINER_PORT` | `OUTPUT_HOST_PORT` |
 
 ### 测试运行
 ```bash
@@ -80,7 +83,7 @@ cd docker && cp .env.example .env   # 填入 API Key 和飞书机器人配置
 hermes -z "帮我生成一份技术交底书，创意是关于XXX"
 
 # Dashboard 界面
-浏览器打开 http://127.0.0.1:9119
+浏览器打开 http://127.0.0.1:${DASHBOARD_PORT}/（端口由 scripts/.env 中的 DASHBOARD_PORT 控制）
 ```
 
 ## Agent 调用方式

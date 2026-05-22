@@ -11,14 +11,6 @@ cd docker && cp .env.example .env
 ./start.sh
 ```
 
-## 端口说明
-
-| 端口 | 容器内 | 宿主机（默认） | 说明 |
-|------|--------|---------------|------|
-| 9119 | Dashboard | 9130 | Hermes Dashboard |
-| 8765 | Gateway | 8790 | Gateway / 飞书 Webhook |
-| 9131 | Output Server | 9131 | 输出文件 HTTP 服务 |
-
 端口通过 `.env` 中的 `DASHBOARD_HOST_PORT` / `GATEWAY_HOST_PORT` / `OUTPUT_HOST_PORT` 配置。
 
 ## 常用命令

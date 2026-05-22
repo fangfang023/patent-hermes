@@ -9,7 +9,7 @@
 | `.gitignore` | Git 忽略规则，含 patent 项目特有项（output/、docker/.env、.logs/ 等） |
 | `.dockerignore` | Docker build context 排除（.git/、output/、node_modules/ 等） |
 | `docker/Dockerfile` | Python 3.11-slim 基础镜像，加入 jq（hooks 需要），项目名 patent-hermes-agent |
-| `docker/docker-compose.yml` | 容器名 patent-hermes-agent，volume patent-hermes-home，端口 9130/8790/9131 |
+| `docker/docker-compose.yml` | 容器名 patent-hermes-agent，volume patent-hermes-home |
 | `docker/.env.example` | 环境变量模板：端口/模型（MiniMax-M2.7）/飞书独立机器人配置 |
 | `docker/start.sh` | Docker 容器启动脚本：华为云镜像拉取、容器状态机、模型配置、服务启动 |
 | `docker/README.md` | Docker 部署说明文档 |

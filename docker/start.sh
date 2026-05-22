@@ -79,9 +79,13 @@ set -a
 source "${DOCKER_DIR}/.env"
 set +a
 
-DASHBOARD_HOST_PORT="${DASHBOARD_HOST_PORT:-9130}"
-GATEWAY_HOST_PORT="${GATEWAY_HOST_PORT:-8790}"
-OUTPUT_HOST_PORT="${OUTPUT_HOST_PORT:-9131}"
+: "${DASHBOARD_HOST_PORT?未设置 DASHBOARD_HOST_PORT，请在 docker/.env 中配置}"
+: "${GATEWAY_HOST_PORT?未设置 GATEWAY_HOST_PORT，请在 docker/.env 中配置}"
+: "${OUTPUT_HOST_PORT?未设置 OUTPUT_HOST_PORT，请在 docker/.env 中配置}"
+# 容器内端口（与 docker-compose.yml 中右侧映射对应）
+: "${DASHBOARD_CONTAINER_PORT?未设置 DASHBOARD_CONTAINER_PORT，请在 docker/.env 中配置}"
+: "${GATEWAY_CONTAINER_PORT?未设置 GATEWAY_CONTAINER_PORT，请在 docker/.env 中配置}"
+: "${OUTPUT_CONTAINER_PORT?未设置 OUTPUT_CONTAINER_PORT，请在 docker/.env 中配置}"
 
 # ---------- 容器状态机 ----------
 _raw_state="$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null || true)"
@@ -205,13 +209,13 @@ docker exec "$CONTAINER_NAME" hermes dashboard --stop 2>/dev/null || true
 log "    启动 Gateway..."
 docker exec -d "$CONTAINER_NAME" hermes gateway run --accept-hooks -q
 
-log "    启动 Dashboard（0.0.0.0:9119）..."
-docker exec -d "$CONTAINER_NAME" hermes dashboard --no-open --host 0.0.0.0 --insecure --skip-build
+log "    启动 Dashboard（0.0.0.0:${DASHBOARD_CONTAINER_PORT}）..."
+docker exec -d "$CONTAINER_NAME" hermes dashboard --no-open --host 0.0.0.0 --port "$DASHBOARD_CONTAINER_PORT" --insecure --skip-build
 
-log "    启动 Output 文件服务（0.0.0.0:9131，仅暴露 output/）..."
-docker exec "$CONTAINER_NAME" pkill -f "http.server 9131" 2>/dev/null || true
+log "    启动 Output 文件服务（0.0.0.0:${OUTPUT_CONTAINER_PORT}，仅暴露 output/）..."
+docker exec "$CONTAINER_NAME" pkill -f "http.server $OUTPUT_CONTAINER_PORT" 2>/dev/null || true
 docker exec "$CONTAINER_NAME" mkdir -p "$HERMES_AGENT_DIR_IN_CONTAINER/output"
-docker exec -d "$CONTAINER_NAME" python3 -m http.server 9131 --directory "$HERMES_AGENT_DIR_IN_CONTAINER/output"
+docker exec -d "$CONTAINER_NAME" python3 -m http.server "$OUTPUT_CONTAINER_PORT" --directory "$HERMES_AGENT_DIR_IN_CONTAINER/output"
 
 sleep 5
 docker exec "$CONTAINER_NAME" hermes gateway status 2>&1 || true

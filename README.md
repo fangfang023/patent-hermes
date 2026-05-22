@@ -67,15 +67,6 @@ cd docker && cp .env.example .env
 
 详见 [docker/README.md](docker/README.md)。
 
-## 端口说明
-
-| 端口 | 宿主机默认 | 说明 |
-|------|-----------|------|
-| Dashboard | 9130 | Hermes Dashboard |
-| Gateway | 8790 | Gateway / 飞书 Webhook |
-| Output Server | 9131 | 输出文件 HTTP 服务 |
-
-
 ## Agent 体系
 
 | Agent | 用途 |
