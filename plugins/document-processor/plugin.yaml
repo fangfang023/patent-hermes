@@ -1,0 +1,7 @@
+name: document-processor
+version: 1.0.0
+description: "Extract text and images from PDF/docx documents before Agent processing"
+author: "user"
+kind: standalone
+provides_hooks:
+  - pre_gateway_dispatch

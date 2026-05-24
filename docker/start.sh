@@ -108,6 +108,21 @@ fi
 hermes_version="$(docker exec "$CONTAINER_NAME" hermes --version 2>/dev/null | head -1 || echo '?')"
 log "    容器内 hermes：${hermes_version}"
 
+# ---------- 注册项目插件 ----------
+log "[2.5/5] 注册项目插件到容器内 ~/.hermes/plugins/..."
+PLUGINS_DIR_IN_CONTAINER="${HERMES_AGENT_DIR_IN_CONTAINER}/plugins"
+HERMES_PLUGINS_IN_CONTAINER="/root/.hermes/plugins"
+docker exec "$CONTAINER_NAME" mkdir -p "$HERMES_PLUGINS_IN_CONTAINER"
+for plugin_dir in plugins/*/; do
+  [ -d "$plugin_dir" ] || continue
+  plugin_name=$(basename "$plugin_dir")
+  [ -f "$plugin_dir/plugin.yaml" ] || continue
+  docker exec "$CONTAINER_NAME" ln -sfn \
+    "${PLUGINS_DIR_IN_CONTAINER}/${plugin_name}" \
+    "${HERMES_PLUGINS_IN_CONTAINER}/${plugin_name}"
+  log "    ✓ ${plugin_name}"
+done
+
 # ---------- 初始化 Hermes 配置（共享模块） ----------
 log "[3/5] 初始化 Hermes 配置..."
 # docker/.env 已通过 env_file 注入为容器环境变量，hermes_init.py 直接从环境变量读值

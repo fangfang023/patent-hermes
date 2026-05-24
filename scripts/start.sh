@@ -26,6 +26,10 @@ chmod +x "$PROJECT_ROOT"/hooks/*.sh 2>/dev/null || true
 LOG_DIR="$PROJECT_ROOT/.logs"
 mkdir -p "$LOG_DIR"
 
+# ─── [0/4] 注册项目插件 → ~/.hermes/plugins/ ───
+echo "[0/4] 注册项目插件..."
+"$SCRIPTS_DIR/register-plugins.sh"
+
 # ─── [1/4] 初始化 Hermes 配置（共享模块）───
 echo "[1/4] 初始化 Hermes 配置..."
 "$HERMES_PY" "$SCRIPTS_DIR/hermes_init.py" --project-dir "$PROJECT_ROOT"
