@@ -454,7 +454,47 @@ def step_register_providers(cfg_path: pathlib.Path) -> None:
     print(f"[providers] model_aliases => {list(aliases.keys())}")
 
 
-# ──────────────────────────── 步骤 7: Patch Hermes ────────────────────────────
+# ──────────────────────────── 步骤 7: 安装 i18n 翻译文件 ────────────────────────────
+
+def step_install_locales(project_dir: str) -> None:
+    """将项目自带的 locales 翻译文件复制到 Hermes site-packages 中。
+
+    hermes-agent 通过 pip 安装时可能不包含 locales/ 翻译目录，
+    导致 gateway 的 /model 等命令回复显示原始 i18n 键名而非可读文本。
+    此步骤将项目 docker/locales/ 下的 yaml 文件复制到正确的位置。
+    """
+    # 定位 Hermes agent 的 site-packages 路径
+    try:
+        import agent.i18n as _i18n
+        locales_target = _i18n._locales_dir()
+    except (ImportError, AttributeError):
+        print("[locales] 无法定位 Hermes locales 目录，跳过")
+        return
+
+    # 项目自带的 locales 目录
+    project_locales = pathlib.Path(project_dir) / "docker" / "locales"
+    if not project_locales.is_dir():
+        print(f"[locales] 项目 locales 目录不存在 ({project_locales})，跳过")
+        return
+
+    yaml_files = list(project_locales.glob("*.yaml"))
+    if not yaml_files:
+        print("[locales] 项目 locales 目录中没有 yaml 文件，跳过")
+        return
+
+    locales_target.mkdir(parents=True, exist_ok=True)
+
+    copied = []
+    for src in yaml_files:
+        dst = locales_target / src.name
+        dst.write_text(src.read_text())
+        copied.append(src.name)
+
+    print(f"[locales] 已安装 {len(copied)} 个翻译文件到 {locales_target}")
+    print(f"  files: {copied}")
+
+
+# ──────────────────────────── 步骤 8: Patch Hermes ────────────────────────────
 
 def _locate_hermes_file(module_path: str, filename: str, home_dir: str) -> pathlib.Path | None:
     """定位 hermes-agent 的 Python 文件。
@@ -585,6 +625,9 @@ def main() -> None:
     print()
 
     step_register_providers(cfg_path)
+    print()
+
+    step_install_locales(project_dir)
     print()
 
     if not args.skip_patch:
