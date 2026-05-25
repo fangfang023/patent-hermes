@@ -26,20 +26,31 @@ chmod +x "$PROJECT_ROOT"/hooks/*.sh 2>/dev/null || true
 LOG_DIR="$PROJECT_ROOT/.logs"
 mkdir -p "$LOG_DIR"
 
-# ─── [0/4] 注册项目插件 → ~/.hermes/plugins/ ───
-echo "[0/4] 注册项目插件..."
+# ─── [0/5] 注册项目插件 → ~/.hermes/plugins/ ───
+echo "[0/5] 注册项目插件..."
 "$SCRIPTS_DIR/register-plugins.sh"
 
-# ─── [1/4] 初始化 Hermes 配置（共享模块）───
-echo "[1/4] 初始化 Hermes 配置..."
+# ─── [1/5] 启用项目所需插件（Hermes opt-in 机制）───
+echo "[1/5] 启用项目插件..."
+for plugin in document-processor; do
+  if hermes plugins list 2>/dev/null | grep -q "$plugin.*enabled"; then
+    echo "  ✓ $plugin 已启用"
+  else
+    hermes plugins enable "$plugin"
+    echo "  ✓ $plugin 已启用"
+  fi
+done
+
+# ─── [2/5] 初始化 Hermes 配置（共享模块）───
+echo "[2/5] 初始化 Hermes 配置..."
 "$HERMES_PY" "$SCRIPTS_DIR/hermes_init.py" --project-dir "$PROJECT_ROOT"
 
-# ─── [2/4] 启动 Hermes Gateway ───
-echo "[2/4] 启动 Hermes Gateway..."
+# ─── [3/5] 启动 Hermes Gateway ───
+echo "[3/5] 启动 Hermes Gateway..."
 hermes gateway start
 
-# ─── [3/4] 启动 Dashboard ───
-echo "[3/4] 启动 Dashboard..."
+# ─── [4/5] 启动 Dashboard ───
+echo "[4/5] 启动 Dashboard..."
 DASHBOARD_LOG="$LOG_DIR/dashboard.log"
 if lsof -i :"$DASHBOARD_PORT" >/dev/null 2>&1; then
   echo "Dashboard 已在运行(端口 $DASHBOARD_PORT),跳过重复启动。"
@@ -65,8 +76,8 @@ else
   echo "Dashboard 似乎未成功启动，请查看日志：$DASHBOARD_LOG"
 fi
 
-# ─── [4/4] 启动 Output 文件服务 ───
-echo "[4/4] 启动 Output 文件服务（http://127.0.0.1:${OUTPUT_PORT}，仅暴露 output/）..."
+# ─── [5/5] 启动 Output 文件服务 ───
+echo "[5/5] 启动 Output 文件服务（http://127.0.0.1:${OUTPUT_PORT}，仅暴露 output/）..."
 mkdir -p "$PROJECT_ROOT/output"
 pkill -f "http.server $OUTPUT_PORT" 2>/dev/null || true
 python3 -m http.server "$OUTPUT_PORT" --directory "$PROJECT_ROOT/output" >"$LOG_DIR/output-server.log" 2>&1 &

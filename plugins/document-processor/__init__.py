@@ -57,6 +57,11 @@ def _extract_pdf(file_path: str) -> dict:
     header = f"[Document: {filename} (PDF, {page_count} pages)]"
     combined_text = header + "\n\n" + "\n\n".join(text_parts) if text_parts else header
 
+    # Append page image paths into text (gateway rewrite only forwards text, not media_urls)
+    if image_files:
+        img_list = "\n".join(f"- {path}" for path, _ in image_files)
+        combined_text += f"\n\n[Page images ({len(image_files)} files), use vision_analyze to read:\n{img_list}]"
+
     result = {"text": combined_text}
     if image_files:
         result["media_urls"] = [p for p, _ in image_files]
@@ -122,6 +127,11 @@ def _extract_docx(file_path: str) -> dict:
 
     filename = Path(file_path).name
     combined_text = f"[Document: {filename} (docx)]\n\n" + "\n\n".join(text_parts)
+
+    # Append embedded image paths into text (gateway rewrite only forwards text, not media_urls)
+    if image_files:
+        img_list = "\n".join(f"- {path}" for path, _ in image_files)
+        combined_text += f"\n\n[Embedded images ({len(image_files)} files), use vision_analyze to read:\n{img_list}]"
 
     result = {"text": combined_text}
     if image_files:

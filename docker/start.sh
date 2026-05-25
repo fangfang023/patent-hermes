@@ -123,6 +123,13 @@ for plugin_dir in plugins/*/; do
   log "    ✓ ${plugin_name}"
 done
 
+# ---------- 启用项目所需插件（Hermes opt-in 机制） ----------
+for plugin in document-processor; do
+  docker exec "$CONTAINER_NAME" hermes plugins enable "$plugin" 2>/dev/null && \
+    log "    ✓ ${plugin} 已启用" || \
+    warn "    ⚠ ${plugin} 启用失败，可能需要手动执行"
+done
+
 # ---------- 初始化 Hermes 配置（共享模块） ----------
 log "[3/5] 初始化 Hermes 配置..."
 # docker/.env 已通过 env_file 注入为容器环境变量，hermes_init.py 直接从环境变量读值

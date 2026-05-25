@@ -61,7 +61,12 @@ def step_config_model(cfg_path: pathlib.Path, project_dir: str) -> None:
     model_default = _env("HERMES_MODEL_DEFAULT")
     model_provider = _env("HERMES_MODEL_PROVIDER")
     model_base_url = _env("HERMES_MODEL_BASE_URL")
-    model_api_key = _env("HERMES_MODEL_API_KEY") or _env("OPENAI_API_KEY")
+    model_api_key = (
+        _env("HERMES_MODEL_API_KEY")
+        or _env("OPENAI_API_KEY")
+        or _env("KIMI_CN_API_KEY")
+        or _env("MINIMAX_CN_API_KEY")
+    )
 
     if model_default:
         model["default"] = model_default
@@ -99,9 +104,12 @@ def step_config_model(cfg_path: pathlib.Path, project_dir: str) -> None:
 # 需要同步到 ~/.hermes/.env 的变量列表
 SYNC_VARS = [
     "HERMES_MODEL_API_KEY",
+    "KIMI_CN_API_KEY",
+    "KIMI_API_KEY",
     "MINIMAX_CN_API_KEY",
     "MINIMAX_CN_BASE_URL",
     "OPENAI_API_KEY",
+    "FEISHU_ENABLED",
     "FEISHU_APP_ID",
     "FEISHU_APP_SECRET",
     "FEISHU_DOMAIN",
@@ -173,7 +181,40 @@ def step_mount_skills(cfg_path: pathlib.Path, project_dir: str) -> None:
     print(f"[skills] external_dirs => {dirs_list}")
 
 
-# ──────────────────────────── 步骤 4: 安装 Hooks ────────────────────────────
+# ──────────────────────────── 步骤 4: 启用插件 ────────────────────────────
+
+# 项目需要自动启用的插件列表
+REQUIRED_PLUGINS = [
+    "document-processor",  # PDF/DOCX 文档预处理（在 agent 之前提取文本和图像）
+]
+
+
+def step_enable_plugins(cfg_path: pathlib.Path) -> None:
+    """在 config.yaml 中启用项目所需的插件（opt-in 机制）。"""
+    cfg = _load_config(cfg_path)
+
+    plugins_cfg = cfg.setdefault("plugins", {})
+    enabled = plugins_cfg.get("enabled", [])
+    if not isinstance(enabled, list):
+        enabled = []
+
+    added = []
+    for name in REQUIRED_PLUGINS:
+        if name not in enabled:
+            enabled.append(name)
+            added.append(name)
+
+    plugins_cfg["enabled"] = enabled
+    _save_config(cfg, cfg_path)
+
+    if added:
+        print(f"[plugins] 已启用: {added}")
+    else:
+        print(f"[plugins] 所有必需插件已启用 ({REQUIRED_PLUGINS})")
+    print(f"[plugins] plugins.enabled = {enabled}")
+
+
+# ──────────────────────────── 步骤 5: 安装 Hooks ────────────────────────────
 
 def step_setup_hooks(cfg_path: pathlib.Path) -> None:
     """启用 hooks_auto_accept（patent 项目暂无实际 hook 脚本注册）。"""
@@ -192,7 +233,7 @@ def step_setup_hooks(cfg_path: pathlib.Path) -> None:
     print("[hooks] patent project hooks 配置已写入")
 
 
-# ──────────────────────────── 步骤 5: Patch Hermes ────────────────────────────
+# ──────────────────────────── 步骤 6: Patch Hermes ────────────────────────────
 
 def _locate_hermes_file(module_path: str, filename: str, home_dir: str) -> pathlib.Path | None:
     """定位 hermes-agent 的 Python 文件。
@@ -314,6 +355,9 @@ def main() -> None:
     print()
 
     step_mount_skills(cfg_path, project_dir)
+    print()
+
+    step_enable_plugins(cfg_path)
     print()
 
     step_setup_hooks(cfg_path)

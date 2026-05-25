@@ -63,12 +63,7 @@ done
 
 if [ ${#missing[@]} -gt 0 ]; then
   echo ""
-  echo "[plugins] ⚠  以下依赖未安装到 Hermes Python ($HERMES_PY)："
-  for pkg in "${missing[@]}"; do
-    echo "         - $pkg"
-  done
-  echo ""
-  echo "         请执行以下命令安装："
-  echo "         $HERMES_PY -m pip install ${missing[*]}"
-  echo ""
+  echo "[plugins] 安装缺失依赖到 Hermes Python ($HERMES_PY)：${missing[*]}"
+  "$HERMES_PY" -m pip install -q "${missing[@]}"
+  echo "[plugins] ✓ 依赖安装完成"
 fi
