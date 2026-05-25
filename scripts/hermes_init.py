@@ -64,6 +64,7 @@ def step_config_model(cfg_path: pathlib.Path, project_dir: str) -> None:
     model_api_key = (
         _env("HERMES_MODEL_API_KEY")
         or _env("OPENAI_API_KEY")
+        or _env("KIMI_API_KEY")
         or _env("KIMI_CN_API_KEY")
         or _env("MINIMAX_CN_API_KEY")
     )
@@ -72,8 +73,11 @@ def step_config_model(cfg_path: pathlib.Path, project_dir: str) -> None:
         model["default"] = model_default
     if model_provider:
         model["provider"] = model_provider
+    # base_url: 始终写入（可能为空，需清除旧值）
     if model_base_url:
         model["base_url"] = model_base_url
+    elif "base_url" in model:
+        del model["base_url"]
     model["max_tokens"] = 32768
     if model_api_key:
         model["api_key"] = model_api_key
@@ -82,8 +86,7 @@ def step_config_model(cfg_path: pathlib.Path, project_dir: str) -> None:
     cfg.setdefault("delegation", {})["child_timeout_seconds"] = 1200
     cfg["delegation"]["max_concurrent_children"] = 3
     cfg["terminal"] = {"cwd": project_dir}
-    cfg.setdefault("credential_pool_strategies", {})["zai"] = "round_robin"
-    cfg.setdefault("providers", {}).setdefault("zai", {})["request_timeout_seconds"] = 300
+    # zai provider 已移除（余额不足，不再使用 Hermes 内置 zai 路由）
 
     _save_config(cfg, cfg_path)
 
@@ -104,11 +107,14 @@ def step_config_model(cfg_path: pathlib.Path, project_dir: str) -> None:
 # 需要同步到 ~/.hermes/.env 的变量列表
 SYNC_VARS = [
     "HERMES_MODEL_API_KEY",
-    "KIMI_CN_API_KEY",
-    "KIMI_API_KEY",
     "MINIMAX_CN_API_KEY",
     "MINIMAX_CN_BASE_URL",
     "OPENAI_API_KEY",
+    # 老张 API · GPT（OpenAI 协议）
+    "LAOZHANG_OPENAI_BASE_URL",
+    "LAOZHANG_OPENAI_API_KEY",
+    "LAOZHANG_OPENAI_MODEL",
+    # 飞书
     "FEISHU_ENABLED",
     "FEISHU_APP_ID",
     "FEISHU_APP_SECRET",
@@ -133,12 +139,16 @@ def step_sync_env(env_path: pathlib.Path) -> None:
                 k, v = line.split("=", 1)
                 merged[k] = v
 
-    # 从环境变量更新
+    # 从环境变量更新（仅在环境变量有值时覆盖，避免空值清掉已有凭据）
     synced = {}
     for var in SYNC_VARS:
         val = _env(var)
-        merged[var] = val
-        synced[var] = val
+        if val:
+            merged[var] = val
+            synced[var] = val
+        elif var not in merged:
+            merged[var] = val
+            synced[var] = val
 
     env_path.parent.mkdir(parents=True, exist_ok=True)
     env_path.write_text("\n".join(f"{k}={v}" for k, v in merged.items()) + "\n")
@@ -233,7 +243,197 @@ def step_setup_hooks(cfg_path: pathlib.Path) -> None:
     print("[hooks] patent project hooks 配置已写入")
 
 
-# ──────────────────────────── 步骤 6: Patch Hermes ────────────────────────────
+# ──────────────────────────── 步骤 6: 注册自定义 Provider + Fallback ────────────────────────────
+
+# 自定义 provider 定义
+#
+# Hermes 合法的 provider 配置键 (config.yaml -> providers.<id>.xxx):
+#   base_url, api_key, key_env, api_mode, name, model, default_model, models,
+#   context_length, request_timeout_seconds, stale_timeout_seconds, rate_limit_delay
+#
+# api_mode 取值:
+#   "chat_completions"      — OpenAI Chat Completions 协议
+#   "anthropic_messages"    — Anthropic Messages 协议
+#   "codex_responses"       — OpenAI Codex Responses 协议
+#
+# 凭据解析优先级:
+#   api_key > key_env (从 ~/.hermes/.env 读取) > OPENAI_API_KEY > OPENROUTER_API_KEY
+#
+CUSTOM_PROVIDERS = [
+    {
+        "id": "laozhang-openai",
+        "base_url_env": "LAOZHANG_OPENAI_BASE_URL",
+        "api_key_env": "LAOZHANG_OPENAI_API_KEY",
+        "model_env": "LAOZHANG_OPENAI_MODEL",
+        "api_mode": "chat_completions",
+        "name": "老张 API · GPT",
+    },
+]
+
+
+def step_register_providers(cfg_path: pathlib.Path) -> None:
+    """注册自定义 provider 和 fallback_providers 到 config.yaml。
+
+    每个 provider 的 API key 通过 key_env 指向 ~/.hermes/.env 中的环境变量，
+    这样 Hermes 在运行时可以正确解析凭据并路由请求。
+
+    注意：使用完全覆盖（而非 setdefault）以确保清除旧版本残留的非法配置键。
+    """
+    import subprocess
+
+    cfg = _load_config(cfg_path)
+    providers = cfg.setdefault("providers", {})
+    fallback_list = cfg.get("fallback_providers", [])
+    if not isinstance(fallback_list, list):
+        fallback_list = []
+
+    # ── 清理已移除的 provider 残留 ──
+    active_ids = {prov["id"] for prov in CUSTOM_PROVIDERS}
+    # 本项目历史注册过的 provider id 列表（用于清理旧版本残留）
+    project_provider_ids = {"zhipu-guanghua", "laozhang", "laozhang-openai"}
+    removed_ids = set()
+    for pid in list(providers.keys()):
+        # 只清理本项目注册过的 provider，不碰 Hermes 内置或其他 provider
+        if pid not in project_provider_ids:
+            continue
+        if pid not in active_ids:
+            del providers[pid]
+            removed_ids.add(pid)
+    # 清理 fallback_providers 中的残留
+    fallback_list = [
+        fp for fp in fallback_list
+        if fp.get("provider") not in removed_ids
+    ]
+    # 清理 model_aliases 中残留的模型名（属于已移除或不存在于 CUSTOM_PROVIDERS 的 provider）
+    aliases = cfg.get("model_aliases", {})
+    if isinstance(aliases, dict):
+        aliases = {
+            k: v for k, v in aliases.items()
+            if v.get("provider") not in removed_ids
+            and v.get("provider") in active_ids
+        }
+    # 清理 credential store 中残留的凭据
+    for pid in removed_ids:
+        try:
+            subprocess.run(
+                ["hermes", "auth", "remove", pid, "--yes"],
+                capture_output=True, text=True, timeout=10,
+            )
+            print(f"  [cleanup] 已移除旧 provider '{pid}' 的凭据")
+        except FileNotFoundError:
+            pass
+        except subprocess.TimeoutExpired:
+            pass
+    if removed_ids:
+        print(f"  [cleanup] 已从 config.yaml 清理旧 provider: {removed_ids}")
+
+    registered = []
+    for prov in CUSTOM_PROVIDERS:
+        base_url = _env(prov["base_url_env"])
+        api_key = _env(prov["api_key_env"])
+        model_name = _env(prov["model_env"])
+
+        if not api_key:
+            print(f"  [providers] {prov['id']}: API key 未配置（{prov['api_key_env']} 为空），跳过")
+            continue
+
+        # 完全覆盖 provider 配置（清除旧版本可能残留的 protocol 等非法键）
+        providers[prov["id"]] = {
+            "base_url": base_url,
+            "key_env": prov["api_key_env"],      # 指向 ~/.hermes/.env 中的变量名
+            "api_mode": prov["api_mode"],
+            "name": prov["name"],
+            "default_model": model_name,
+            "request_timeout_seconds": 300,
+        }
+
+        # 添加到 fallback_providers（避免重复）
+        if model_name:
+            exists = any(
+                fp.get("provider") == prov["id"] and fp.get("model") == model_name
+                for fp in fallback_list
+            )
+            if not exists:
+                fallback_entry = {"provider": prov["id"], "model": model_name}
+                fallback_list.append(fallback_entry)
+
+        registered.append(prov["id"])
+        print(f"  [providers] {prov['id']}: base_url={base_url}, model={model_name}, api_mode={prov['api_mode']}")
+
+        # 自动注册 credential（hermes auth add），使 /model 命令可以发现该 provider
+        try:
+            result = subprocess.run(
+                ["hermes", "auth", "add", prov["id"],
+                 "--type", "api-key",
+                 "--api-key", api_key,
+                 "--label", f"patent-{prov['id']}"],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode == 0:
+                print(f"  [credentials] {prov['id']}: 已注册到 credential store")
+            else:
+                print(f"  [credentials] {prov['id']}: {result.stdout.strip() or result.stderr.strip()}")
+        except FileNotFoundError:
+            print("  [credentials] hermes CLI 未找到，跳过")
+        except subprocess.TimeoutExpired:
+            print(f"  [credentials] {prov['id']}: 注册超时，跳过")
+
+    # 清理 fallback_providers 中不属于当前 active_models 的旧条目
+    active_models_for_fallback = {
+        (_env(prov["model_env"]), prov["id"])
+        for prov in CUSTOM_PROVIDERS if _env(prov["model_env"])
+    }
+    fallback_list = [
+        fp for fp in fallback_list
+        if (fp.get("model"), fp.get("provider")) in active_models_for_fallback
+        or fp.get("provider") not in {p["id"] for p in CUSTOM_PROVIDERS}
+    ]
+
+    cfg["fallback_providers"] = fallback_list
+
+    # ── model_aliases：为每个自定义 provider 的模型创建直接别名 ──
+    #
+    # 解决的问题：
+    #   Hermes 的 /model 命令在做模型名自动检测时，会按静态目录匹配 provider。
+    #   例如 gpt-5.5 在 openai-codex 的 DEFAULT_CODEX_MODELS 中，导致被路由到
+    #   需要 OAuth 的 OpenAI Codex provider 而非自定义的 laozhang-openai。
+    #
+    #   即使显式指定 --provider laozhang-openai，credential pool 按 base_url
+    #   匹配时也可能返回同一 base_url 下其他 provider 的错误凭据。
+    #
+    #   model_aliases 是 Hermes model_switch.py 的最高优先级路径（direct alias），
+    #   在所有自动检测之前匹配，直接指定 provider + base_url，跳过 pool 匹配。
+    #
+    # aliases 已在上方清理逻辑中过滤了被移除的 provider，直接复用
+    # 先清理同一 provider 下旧的模型 alias（避免更换模型后残留旧条目）
+    active_models = set()
+    for prov in CUSTOM_PROVIDERS:
+        model_name = _env(prov["model_env"])
+        if model_name and prov["id"] in registered:
+            active_models.add(model_name)
+    aliases = {
+        k: v for k, v in aliases.items()
+        if k in active_models
+    }
+    for prov in CUSTOM_PROVIDERS:
+        model_name = _env(prov["model_env"])
+        base_url = _env(prov["base_url_env"])
+        if model_name and prov["id"] in registered:
+            aliases[model_name] = {
+                "model": model_name,
+                "provider": prov["id"],
+                "base_url": base_url,
+            }
+
+    cfg["model_aliases"] = aliases
+    _save_config(cfg, cfg_path)
+
+    print(f"[providers] 已注册 {len(registered)} 个自定义 provider: {registered}")
+    print(f"[providers] fallback_providers => {fallback_list}")
+    print(f"[providers] model_aliases => {list(aliases.keys())}")
+
+
+# ──────────────────────────── 步骤 7: Patch Hermes ────────────────────────────
 
 def _locate_hermes_file(module_path: str, filename: str, home_dir: str) -> pathlib.Path | None:
     """定位 hermes-agent 的 Python 文件。
@@ -361,6 +561,9 @@ def main() -> None:
     print()
 
     step_setup_hooks(cfg_path)
+    print()
+
+    step_register_providers(cfg_path)
     print()
 
     if not args.skip_patch:
