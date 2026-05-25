@@ -270,6 +270,24 @@ CUSTOM_PROVIDERS = [
     },
 ]
 
+# 额外的 model_aliases（不属于 CUSTOM_PROVIDERS 但需要直接别名来覆盖 Hermes 自动检测）
+#
+# 解决的问题：
+#   kimi-k2.6 — Hermes 默认路由到 kimi-coding（国际站），国内 key 会被 401 拒绝
+#   gpt-5.5   — Hermes 默认路由到 openai-codex（需要 OAuth），无法使用自定义 API
+#
+EXTRA_MODEL_ALIASES = {
+    "kimi-k2.6": {
+        "model": "kimi-k2.6",
+        "provider": "kimi-coding-cn",
+    },
+    "gpt-5.5": {
+        "model": "gpt-5.5",
+        "provider": "laozhang-openai",
+        "base_url": "https://api.laozhang.ai/v1",
+    },
+}
+
 
 def step_register_providers(cfg_path: pathlib.Path) -> None:
     """注册自定义 provider 和 fallback_providers 到 config.yaml。
@@ -424,6 +442,9 @@ def step_register_providers(cfg_path: pathlib.Path) -> None:
                 "provider": prov["id"],
                 "base_url": base_url,
             }
+
+    # 合入额外别名（内置 provider 的模型名需要覆盖自动检测）
+    aliases.update(EXTRA_MODEL_ALIASES)
 
     cfg["model_aliases"] = aliases
     _save_config(cfg, cfg_path)
