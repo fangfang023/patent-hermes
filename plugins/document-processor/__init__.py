@@ -62,11 +62,7 @@ def _extract_pdf(file_path: str) -> dict:
         img_list = "\n".join(f"- {path}" for path, _ in image_files)
         combined_text += f"\n\n[Page images ({len(image_files)} files), use vision_analyze to read:\n{img_list}]"
 
-    result = {"text": combined_text}
-    if image_files:
-        result["media_urls"] = [p for p, _ in image_files]
-        result["media_types"] = [t for _, t in image_files]
-    return result
+    return {"text": combined_text}
 
 
 def _extract_docx(file_path: str) -> dict:
@@ -133,11 +129,7 @@ def _extract_docx(file_path: str) -> dict:
         img_list = "\n".join(f"- {path}" for path, _ in image_files)
         combined_text += f"\n\n[Embedded images ({len(image_files)} files), use vision_analyze to read:\n{img_list}]"
 
-    result = {"text": combined_text}
-    if image_files:
-        result["media_urls"] = [p for p, _ in image_files]
-        result["media_types"] = [t for _, t in image_files]
-    return result
+    return {"text": combined_text}
 
 
 def _process_document(file_path: str, media_type: str) -> dict:
@@ -165,8 +157,6 @@ def pre_gateway_dispatch(event, gateway=None, session_store=None, **kwargs):
         return None
 
     all_text_parts: list[str] = []
-    all_media_urls: list[str] = []
-    all_media_types: list[str] = []
 
     for path, mtype in zip(media_urls, media_types):
         result = _process_document(path, mtype)
@@ -174,11 +164,8 @@ def pre_gateway_dispatch(event, gateway=None, session_store=None, **kwargs):
             continue
         if result.get("text"):
             all_text_parts.append(result["text"])
-        if result.get("media_urls"):
-            all_media_urls.extend(result["media_urls"])
-            all_media_types.extend(result["media_types"])
 
-    if not all_text_parts and not all_media_urls:
+    if not all_text_parts:
         return None
 
     original_text = event.text or ""
@@ -188,17 +175,11 @@ def pre_gateway_dispatch(event, gateway=None, session_store=None, **kwargs):
     else:
         new_text = f"{_NO_RE_READ_INSTRUCTION}\n\n{combined}"
 
-    rewrite = {"action": "rewrite", "text": new_text}
-    if all_media_urls:
-        rewrite["media_urls"] = list(event.media_urls) + all_media_urls
-        rewrite["media_types"] = list(event.media_types) + all_media_types
-
     logger.info(
-        "document-processor: rewrote document (%d chars, %d page images)",
+        "document-processor: rewrote document (%d chars)",
         len(new_text),
-        len(all_media_urls),
     )
-    return rewrite
+    return {"action": "rewrite", "text": new_text}
 
 
 def register(ctx) -> None:
