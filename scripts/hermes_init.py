@@ -64,8 +64,7 @@ def step_config_model(cfg_path: pathlib.Path, project_dir: str) -> None:
     model_api_key = (
         _env("HERMES_MODEL_API_KEY")
         or _env("OPENAI_API_KEY")
-        or _env("KIMI_API_KEY")
-        or _env("KIMI_CN_API_KEY")
+        or _env("LAOZHANG_OPENAI_API_KEY")
         or _env("MINIMAX_CN_API_KEY")
     )
 
@@ -88,6 +87,23 @@ def step_config_model(cfg_path: pathlib.Path, project_dir: str) -> None:
     cfg["terminal"] = {"cwd": project_dir}
     # zai provider 已移除（余额不足，不再使用 Hermes 内置 zai 路由）
 
+    # ── auxiliary vision 配置 ──
+    # 当主模型 provider 为自定义 provider（如 laozhang-openai）时，
+    # Hermes 无法从 models.dev 查询其 vision 能力，导致 image_routing
+    # 回退到 "text" 模式（依赖 vision_analyze 工具）。
+    # 显式配置 auxiliary.vision 让 vision_analyze 使用同一个 provider，
+    # 确保图片/PDF 能被正确识别。
+    aux = cfg.setdefault("auxiliary", {})
+    vis = aux.setdefault("vision", {})
+    if model_provider and model_base_url and model_api_key:
+        vis["provider"] = model_provider
+        vis["base_url"] = model_base_url
+        vis["api_key"] = model_api_key
+        vis["model"] = model_default or "gpt-4.1"
+        vis["timeout"] = 120
+        vis["download_timeout"] = 30
+    # 如果主模型没有配置（如首次运行），保持 auto 不动
+
     _save_config(cfg, cfg_path)
 
     # 验证输出
@@ -100,6 +116,8 @@ def step_config_model(cfg_path: pathlib.Path, project_dir: str) -> None:
     print(f"  delegation.child_timeout_seconds = 1200")
     print(f"  delegation.max_concurrent_children = 3")
     print(f"  terminal.cwd = {project_dir}")
+    print(f"  auxiliary.vision.provider = {vis.get('provider', 'auto')}")
+    print(f"  auxiliary.vision.model = {vis.get('model', '(auto)')}")
 
 
 # ──────────────────────────── 步骤 2: 同步飞书变量到 .env ────────────────────────────
@@ -273,14 +291,10 @@ CUSTOM_PROVIDERS = [
 # 额外的 model_aliases（不属于 CUSTOM_PROVIDERS 但需要直接别名来覆盖 Hermes 自动检测）
 #
 # 解决的问题：
-#   kimi-k2.6 — Hermes 默认路由到 kimi-coding（国际站），国内 key 会被 401 拒绝
-#   gpt-5.1   — Hermes 默认路由到 openai-codex（需要 OAuth），无法使用自定义 API
+#   gpt-5.1 — Hermes 默认路由到 openai-codex（需要 OAuth），无法使用自定义 API
 #
+
 EXTRA_MODEL_ALIASES = {
-    "kimi-k2.6": {
-        "model": "kimi-k2.6",
-        "provider": "kimi-coding-cn",
-    },
     "gpt-5.1": {
         "model": "gpt-5.1",
         "provider": "laozhang-openai",
