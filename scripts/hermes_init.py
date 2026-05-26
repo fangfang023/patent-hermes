@@ -127,6 +127,7 @@ SYNC_VARS = [
     "HERMES_MODEL_API_KEY",
     "MINIMAX_CN_API_KEY",
     "MINIMAX_CN_BASE_URL",
+    "MINIMAX_CN_MODEL",
     "OPENAI_API_KEY",
     # OpenRouter · Kimi（OpenAI 协议）
     "OPENROUTER_KIMI_BASE_URL",
@@ -289,6 +290,7 @@ CUSTOM_PROVIDERS = [
         "model_env": "OPENROUTER_KIMI_MODEL",
         "api_mode": "chat_completions",
         "name": "OpenRouter · Kimi",
+        "request_timeout_seconds": 180,   # 缩短超时，快速触发 fallback
     },
     {
         "id": "laozhang-openai",
@@ -297,6 +299,16 @@ CUSTOM_PROVIDERS = [
         "model_env": "LAOZHANG_OPENAI_MODEL",
         "api_mode": "chat_completions",
         "name": "老张 API · GPT",
+        "request_timeout_seconds": 180,
+    },
+    {
+        "id": "minimax-cn",
+        "base_url_env": "MINIMAX_CN_BASE_URL",
+        "api_key_env": "MINIMAX_CN_API_KEY",
+        "model_env": "MINIMAX_CN_MODEL",
+        "api_mode": "anthropic_messages",
+        "name": "MiniMax 中国站",
+        "request_timeout_seconds": 180,
     },
 ]
 
@@ -322,6 +334,11 @@ EXTRA_MODEL_ALIASES = {
         "provider": "openrouter-kimi",
         "base_url": "https://openrouter.ai/api/v1",
     },
+    "MiniMax-M2.7": {
+        "model": "MiniMax-M2.7",
+        "provider": "minimax-cn",
+        "base_url": "https://api.minimaxi.com/anthropic",
+    },
 }
 
 
@@ -344,7 +361,7 @@ def step_register_providers(cfg_path: pathlib.Path) -> None:
     # ── 清理已移除的 provider 残留 ──
     active_ids = {prov["id"] for prov in CUSTOM_PROVIDERS}
     # 本项目历史注册过的 provider id 列表（用于清理旧版本残留）
-    project_provider_ids = {"zhipu-guanghua", "laozhang", "laozhang-openai", "openrouter-kimi"}
+    project_provider_ids = {"zhipu-guanghua", "laozhang", "laozhang-openai", "openrouter-kimi", "minimax-cn"}
     removed_ids = set()
     for pid in list(providers.keys()):
         # 只清理本项目注册过的 provider，不碰 Hermes 内置或其他 provider
@@ -398,7 +415,7 @@ def step_register_providers(cfg_path: pathlib.Path) -> None:
             "api_mode": prov["api_mode"],
             "name": prov["name"],
             "default_model": model_name,
-            "request_timeout_seconds": 300,
+            "request_timeout_seconds": prov.get("request_timeout_seconds", 180),
         }
 
         # 添加到 fallback_providers（避免重复）
