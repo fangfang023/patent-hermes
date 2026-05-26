@@ -83,7 +83,7 @@ cd docker && cp .env.example .env   # 填入 API Key 和飞书机器人配置
 hermes -z "帮我生成一份技术交底书，创意是关于XXX"
 
 # Dashboard 界面
-浏览器打开 http://127.0.0.1:${DASHBOARD_PORT}/（端口由 scripts/.env 中的 DASHBOARD_PORT 控制）
+浏览器打开 http://192.168.8.234:${DASHBOARD_PORT}/（端口由 scripts/.env 中的 DASHBOARD_PORT 控制）
 ```
 
 ## Agent 调用方式
