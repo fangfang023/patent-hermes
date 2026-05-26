@@ -274,15 +274,15 @@ CUSTOM_PROVIDERS = [
 #
 # 解决的问题：
 #   kimi-k2.6 — Hermes 默认路由到 kimi-coding（国际站），国内 key 会被 401 拒绝
-#   gpt-5.5   — Hermes 默认路由到 openai-codex（需要 OAuth），无法使用自定义 API
+#   gpt-5.1   — Hermes 默认路由到 openai-codex（需要 OAuth），无法使用自定义 API
 #
 EXTRA_MODEL_ALIASES = {
     "kimi-k2.6": {
         "model": "kimi-k2.6",
         "provider": "kimi-coding-cn",
     },
-    "gpt-5.5": {
-        "model": "gpt-5.5",
+    "gpt-5.1": {
+        "model": "gpt-5.1",
         "provider": "laozhang-openai",
         "base_url": "https://api.laozhang.ai/v1",
     },
@@ -413,7 +413,7 @@ def step_register_providers(cfg_path: pathlib.Path) -> None:
     #
     # 解决的问题：
     #   Hermes 的 /model 命令在做模型名自动检测时，会按静态目录匹配 provider。
-    #   例如 gpt-5.5 在 openai-codex 的 DEFAULT_CODEX_MODELS 中，导致被路由到
+    #   例如 gpt-5.1 在 openai-codex 的 DEFAULT_CODEX_MODELS 中，导致被路由到
     #   需要 OAuth 的 OpenAI Codex provider 而非自定义的 laozhang-openai。
     #
     #   即使显式指定 --provider laozhang-openai，credential pool 按 base_url
