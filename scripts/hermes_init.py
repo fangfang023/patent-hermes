@@ -128,6 +128,10 @@ SYNC_VARS = [
     "MINIMAX_CN_API_KEY",
     "MINIMAX_CN_BASE_URL",
     "OPENAI_API_KEY",
+    # OpenRouter · Kimi（OpenAI 协议）
+    "OPENROUTER_KIMI_BASE_URL",
+    "OPENROUTER_KIMI_API_KEY",
+    "OPENROUTER_KIMI_MODEL",
     # 老张 API · GPT（OpenAI 协议）
     "LAOZHANG_OPENAI_BASE_URL",
     "LAOZHANG_OPENAI_API_KEY",
@@ -279,6 +283,14 @@ def step_setup_hooks(cfg_path: pathlib.Path) -> None:
 #
 CUSTOM_PROVIDERS = [
     {
+        "id": "openrouter-kimi",
+        "base_url_env": "OPENROUTER_KIMI_BASE_URL",
+        "api_key_env": "OPENROUTER_KIMI_API_KEY",
+        "model_env": "OPENROUTER_KIMI_MODEL",
+        "api_mode": "chat_completions",
+        "name": "OpenRouter · Kimi",
+    },
+    {
         "id": "laozhang-openai",
         "base_url_env": "LAOZHANG_OPENAI_BASE_URL",
         "api_key_env": "LAOZHANG_OPENAI_API_KEY",
@@ -295,10 +307,20 @@ CUSTOM_PROVIDERS = [
 #
 
 EXTRA_MODEL_ALIASES = {
+    "gpt-4.1": {
+        "model": "gpt-4.1",
+        "provider": "laozhang-openai",
+        "base_url": "https://api.laozhang.ai/v1",
+    },
     "gpt-5.1": {
         "model": "gpt-5.1",
         "provider": "laozhang-openai",
         "base_url": "https://api.laozhang.ai/v1",
+    },
+    "kimi-k2.6": {
+        "model": "kimi-k2.6",
+        "provider": "openrouter-kimi",
+        "base_url": "https://openrouter.ai/api/v1",
     },
 }
 
@@ -322,7 +344,7 @@ def step_register_providers(cfg_path: pathlib.Path) -> None:
     # ── 清理已移除的 provider 残留 ──
     active_ids = {prov["id"] for prov in CUSTOM_PROVIDERS}
     # 本项目历史注册过的 provider id 列表（用于清理旧版本残留）
-    project_provider_ids = {"zhipu-guanghua", "laozhang", "laozhang-openai"}
+    project_provider_ids = {"zhipu-guanghua", "laozhang", "laozhang-openai", "openrouter-kimi"}
     removed_ids = set()
     for pid in list(providers.keys()):
         # 只清理本项目注册过的 provider，不碰 Hermes 内置或其他 provider
