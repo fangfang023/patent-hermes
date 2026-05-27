@@ -81,7 +81,71 @@ cd docker && cp .env.example .env
 
 详见 [AGENTS.md](AGENTS.md) 和 [agents/](agents/)。
 
-## 配置说明
+## Docker 部署详解
 
-- 模型：MiniMax-M2.7 / minimax-cn provider
-- 详见 [docker/.env.example](docker/.env.example)
+### 端口占用
+
+容器启动后会占用宿主机端口，需要确保这些端口在本机上没有被其他服务使用。端口在 `docker/.env` 中配置：
+
+| 宿主机端口变量 | 当前值 | 用途 |
+|--------------|--------|------|
+| `DASHBOARD_HOST_PORT` | 9105 | Hermes Dashboard Web 界面 |
+| `GATEWAY_HOST_PORT` | 9106 | Gateway（飞书 Webhook 入口） |
+| `OUTPUT_HOST_PORT` | 9107 | 产出文件下载服务 |
+
+> **多项目共存**：同一台机器上运行多个 Docker 项目时，只需修改 `docker/.env` 中的 `_HOST_PORT` 值，确保宿主机端口互不冲突即可。容器内端口（`_CONTAINER_PORT`）彼此隔离，不会冲突，无需修改。
+
+### 卷挂载
+
+| 挂载类型 | 宿主机路径 | 容器路径 | 用途 |
+|----------|-----------|---------|------|
+| Bind mount | 项目根目录 `..` | `/app/patent-hermes-agent` | 项目源码（代码修改实时生效） |
+| Named volume | `patent-hermes-home` | `/root/.hermes` | Hermes 状态持久化（config.yaml / sessions / state.db / auth.json） |
+
+> **多项目共存**：Named volume 名为 `patent-hermes-home`（在 `docker-compose.yml` 中显式指定）。如果同一台机器上有其他项目也叫这个名字，会共享同一个 volume 导致配置互相覆盖。多项目部署时需修改 volume 名。
+
+### 容器名称
+
+- Compose project name: `patent-hermes`
+- 容器名: `patent-hermes-agent`
+- 镜像名: `patent-hermes-agent:latest`
+
+> 同一机器上部署多个项目时，需确保容器名和镜像名不重复。
+
+### 访问地址
+
+启动成功后，浏览器访问：
+
+- Dashboard: `http://<服务器IP>:${DASHBOARD_HOST_PORT}/`
+- 文件下载: `http://<服务器IP>:${OUTPUT_HOST_PORT}/`
+
+
+## 环境变量配置
+
+所有配置集中在 `docker/.env` 中，首次部署从模板创建：
+
+```bash
+cd docker && cp .env.example .env
+```
+
+### 必填项
+
+| 变量 | 说明 |
+|------|------|
+| `HERMES_MODEL_API_KEY` | 主模型 API Key（OpenRouter / 老张 API 等） |
+| `OPENROUTER_KIMI_API_KEY` | OpenRouter API Key（使用 Kimi 模型时必填） |
+| `MINIMAX_CN_API_KEY` | MiniMax API Key（备用模型） |
+| `FEISHU_APP_ID` | 飞书机器人 App ID（需要飞书接入时填写） |
+| `FEISHU_APP_SECRET` | 飞书机器人 App Secret |
+
+### 主模型切换
+
+通过 `HERMES_MODEL_DEFAULT` / `HERMES_MODEL_PROVIDER` / `HERMES_MODEL_BASE_URL` 三个变量控制：
+
+| 模型 | `HERMES_MODEL_DEFAULT` | `HERMES_MODEL_PROVIDER` | `HERMES_MODEL_BASE_URL` |切换命令 |
+|------|----------------------|------------------------|------------------------|-------|
+| Kimi-K2.6 | `kimi-k2.6` | `openrouter-kimi` | `https://openrouter.ai/api/v1` | /model Kimi-K2.6|
+| GPT-4.1 | `gpt-4.1` | `laozhang-openai` | `https://api.laozhang.ai/v1` |/model gpt-4.1|
+| MiniMax-M2.7 | `MiniMax-M2.7` | `minimax-cn` | `https://api.minimaxi.com/anthropic` |/model MiniMax-M2.7|
+
+> 完整变量说明见 [docker/.env.example](docker/.env.example)，每个变量都有注释。
