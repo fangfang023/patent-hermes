@@ -64,6 +64,7 @@ def step_config_model(cfg_path: pathlib.Path, project_dir: str) -> None:
     model_api_key = (
         _env("HERMES_MODEL_API_KEY")
         or _env("OPENAI_API_KEY")
+        or _env("MOONSHOT_KIMI_API_KEY")
         or _env("LAOZHANG_OPENAI_API_KEY")
         or _env("MINIMAX_CN_API_KEY")
     )
@@ -129,10 +130,10 @@ SYNC_VARS = [
     "MINIMAX_CN_BASE_URL",
     "MINIMAX_CN_MODEL",
     "OPENAI_API_KEY",
-    # OpenRouter · Kimi（OpenAI 协议）
-    "OPENROUTER_KIMI_BASE_URL",
-    "OPENROUTER_KIMI_API_KEY",
-    "OPENROUTER_KIMI_MODEL",
+    # Moonshot · Kimi 直连（Anthropic 协议）
+    "MOONSHOT_KIMI_BASE_URL",
+    "MOONSHOT_KIMI_API_KEY",
+    "MOONSHOT_KIMI_MODEL",
     # 老张 API · GPT（OpenAI 协议）
     "LAOZHANG_OPENAI_BASE_URL",
     "LAOZHANG_OPENAI_API_KEY",
@@ -284,12 +285,12 @@ def step_setup_hooks(cfg_path: pathlib.Path) -> None:
 #
 CUSTOM_PROVIDERS = [
     {
-        "id": "openrouter-kimi",
-        "base_url_env": "OPENROUTER_KIMI_BASE_URL",
-        "api_key_env": "OPENROUTER_KIMI_API_KEY",
-        "model_env": "OPENROUTER_KIMI_MODEL",
-        "api_mode": "chat_completions",
-        "name": "OpenRouter · Kimi",
+        "id": "moonshot-kimi",
+        "base_url_env": "MOONSHOT_KIMI_BASE_URL",
+        "api_key_env": "MOONSHOT_KIMI_API_KEY",
+        "model_env": "MOONSHOT_KIMI_MODEL",
+        "api_mode": "anthropic_messages",
+        "name": "Moonshot · Kimi 直连",
         "request_timeout_seconds": 180,   # 缩短超时，快速触发 fallback
     },
     {
@@ -331,8 +332,8 @@ EXTRA_MODEL_ALIASES = {
     },
     "kimi-k2.6": {
         "model": "kimi-k2.6",
-        "provider": "openrouter-kimi",
-        "base_url": "https://openrouter.ai/api/v1",
+        "provider": "moonshot-kimi",
+        "base_url": "https://api.moonshot.cn/anthropic",
     },
     "MiniMax-M2.7": {
         "model": "MiniMax-M2.7",
@@ -361,7 +362,7 @@ def step_register_providers(cfg_path: pathlib.Path) -> None:
     # ── 清理已移除的 provider 残留 ──
     active_ids = {prov["id"] for prov in CUSTOM_PROVIDERS}
     # 本项目历史注册过的 provider id 列表（用于清理旧版本残留）
-    project_provider_ids = {"zhipu-guanghua", "laozhang", "laozhang-openai", "openrouter-kimi", "minimax-cn"}
+    project_provider_ids = {"zhipu-guanghua", "laozhang", "laozhang-openai", "openrouter-kimi", "moonshot-kimi", "minimax-cn"}
     removed_ids = set()
     for pid in list(providers.keys()):
         # 只清理本项目注册过的 provider，不碰 Hermes 内置或其他 provider

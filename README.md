@@ -132,8 +132,8 @@ cd docker && cp .env.example .env
 
 | 变量 | 说明 |
 |------|------|
-| `HERMES_MODEL_API_KEY` | 主模型 API Key（OpenRouter / 老张 API 等） |
-| `OPENROUTER_KIMI_API_KEY` | OpenRouter API Key（使用 Kimi 模型时必填） |
+| `HERMES_MODEL_API_KEY` | 主模型 API Key（Moonshot / 老张 API 等） |
+| `MOONSHOT_KIMI_API_KEY` | Moonshot API Key（使用 Kimi 模型时必填） |
 | `MINIMAX_CN_API_KEY` | MiniMax API Key（备用模型） |
 | `FEISHU_APP_ID` | 飞书机器人 App ID（需要飞书接入时填写） |
 | `FEISHU_APP_SECRET` | 飞书机器人 App Secret |
@@ -144,7 +144,7 @@ cd docker && cp .env.example .env
 
 | 模型 | `HERMES_MODEL_DEFAULT` | `HERMES_MODEL_PROVIDER` | `HERMES_MODEL_BASE_URL` |切换命令 |
 |------|----------------------|------------------------|------------------------|-------|
-| Kimi-K2.6 | `kimi-k2.6` | `openrouter-kimi` | `https://openrouter.ai/api/v1` | /model Kimi-K2.6|
+| Kimi-K2.6 | `kimi-k2.6` | `moonshot-kimi` | `https://api.moonshot.cn/anthropic` | /model kimi-k2.6|
 | GPT-4.1 | `gpt-4.1` | `laozhang-openai` | `https://api.laozhang.ai/v1` |/model gpt-4.1|
 | MiniMax-M2.7 | `MiniMax-M2.7` | `minimax-cn` | `https://api.minimaxi.com/anthropic` |/model MiniMax-M2.7|
 
