@@ -33,7 +33,7 @@ knowledge/
 
 ```
 调用: document-reviewer-agent
-参数: skill_used = "patent-tech-disclosure"
+参数: skill_used = "tech-disclosure"
 → 自动查找: review-standards/patent/disclosure-review.md
 → 读取评分维度、检查清单等
 → 生成审核报告
@@ -43,10 +43,9 @@ knowledge/
 
 | Skill 名称 | 标准文件路径 |
 |-----------|-------------|
-| `patent-tech-disclosure` | review-standards/patent/disclosure-review.md |
-| `patent-patent-writing` | review-standards/patent/patent-review.md |
+| `tech-disclosure` | review-standards/patent/disclosure-review.md |
 | `technical-tech-solution` | review-standards/tech/solution-review.md |
-| `patent-business-analysis` | review-standards/business/analysis-review.md |
+| `business-analysis` | review-standards/business/analysis-review.md |
 
 ### 直接引用审核标准文件
 
@@ -85,7 +84,7 @@ touch review-standards/patent/innovation-review.md
 # 2. 编辑文件内容（参考其他审核标准格式）
 
 # 3. 更新 document-reviewer-agent.md 映射表
-# 添加行: | patent-patent-innovation-assessment-report | review-standards/patent/innovation-review.md | 80 |
+# 添加行: | innovation-assessment-report | review-standards/patent/innovation-review.md | 80 |
 ```
 
 ## 审核标准文件格式规范

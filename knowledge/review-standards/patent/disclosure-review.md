@@ -245,7 +245,7 @@
 
 > **📌 维度提示**：本维度通过与参考示例对比来评估质量。对比时聚焦技术描述的深度和实质，不对比参数数值的具体化程度、异常处理覆盖度等排除项内容。
 
-**参考示例文件位置**：`.claude/skills/patent-tech-disclosure/examples/`
+**参考示例文件位置**：`.claude/skills/tech-disclosure/examples/`
 
 | 示例文件 | 技术复杂度 | 参考价值 |
 |---------|-----------|----------|
@@ -508,7 +508,7 @@
 
 ## 示例文件引用说明
 
-**示例文件位置**：`.claude/skills/patent-tech-disclosure/examples/`
+**示例文件位置**：`.claude/skills/tech-disclosure/examples/`
 
 | 文件 | 用途 |
 |------|------|

@@ -326,7 +326,7 @@ Skill(
   skill: "utils-document-reviewer",
   args: {
     "document_path": "./generated_docs/tech_disclosure_xxx.md",
-    "skill_used": "patent-tech-disclosure",
+    "skill_used": "tech-disclosure",
     "review_standard": "{审核标准内容}",
     "innovation_check_result": {
       "innovation_score": 78,

@@ -6,7 +6,6 @@
 
 **消费者**：
 - `document-reviewer-agent`：使用本标准进行结构化质量打分
-- `patent-claims-review-and-amendment` Skill（审查模式）：使用本标准进行逐条问题检查和严重等级标注
 - 其他需要评估权利要求书质量的场景均以本文件为准
 
 ---

@@ -32,22 +32,22 @@
 
 | Agent | Description | Skills Preloaded | When to Use |
 |--------|-------------|------------------|-------------|
-| `disclosure-agent` | 交底书领域复杂工作流编排 | patent-tech-disclosure, patent-challenger, utils-document-reviewer, utils-innovation-checker | 交底书生成/完善 + 质疑循环 |
-| `patent-drafting-agent` | 专利撰写领域复杂管线编排 | patent-claims-writing, patent-patent-writing, patent-tech-disclosure, patent-challenger, utils-document-reviewer, utils-innovation-checker, patent-innovation-splitter, patent-divisional-analysis, patent-claims-review-and-amendment, patent-law-reference | 全套专利、权利要求书、说明书、母案分案、创新评估+撰写 |
-| `prosecution-agent` | 审查答复领域复杂管线编排 | patent-office-action-response, patent-claims-review-and-amendment, patent-reexamination-response, patent-law-reference | OA答复、驳回复审、申请人疑问分析 |
+| `disclosure-agent` | 交底书领域复杂工作流编排 | tech-disclosure, disclosure-challenger, utils-document-reviewer, utils-innovation-checker | 交底书生成/完善 + 质疑循环 |
+| `patent-drafting-agent` | 专利撰写领域复杂管线编排 | disclosure-challenger | 全套专利、权利要求书、说明书、母案分案、创新评估+撰写 |
+| `prosecution-agent` | 审查答复领域复杂管线编排 | oa-response, reexamination-response | OA答复、驳回复审、申请人疑问分析 |
 
 ### 批量专利 Agent
 
 | Agent | Description | Skills Preloaded | When to Use |
 |--------|-------------|------------------|-------------|
 | `batch-patent-generator` | 批量前置阶段编排器 | paper-engineering-paper, paper-science-paper, paper-economy-paper | 批量创意→论文→创意挖掘 |
-| `single-creative-generator` | 单创意专利+方案生成器 | patent-patent-writing, patent-product-plan, technical-tech-solution, patent-operation-plan, patent-ip-strategy | 单个创意全套生成 |
+| `single-creative-generator` | 单创意专利+方案生成器 | product-plan, technical-tech-solution, operation-plan, ip-strategy | 单个创意全套生成 |
 
 ### 质疑与审核 Agent
 
 | Agent | Description | Skills Preloaded | When to Use |
 |--------|-------------|------------------|-------------|
-| `patent-challenger-agent` | 专利质疑者 | patent-challenger | 对抗式质疑交底书或权利要求书 |
+| `patent-challenger-agent` | 专利质疑者 | disclosure-challenger | 对抗式质疑交底书或权利要求书 |
 | `document-reviewer-agent` | 文档审核器 | utils-document-reviewer, utils-innovation-checker | 文档质量打分与评审 |
 
 ---

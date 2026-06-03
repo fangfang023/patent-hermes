@@ -3,7 +3,7 @@ name: patent-challenger-agent
 description: 专利质疑者，对技术交底书或权利要求书进行尖锐质疑。对交底书：迫使补充技术实现细节、完善逻辑流程、确保实施例充分使用技术方案。对权利要求书：模拟审查员视角检查必要技术特征、保护范围、防御纵深等。
 tools: Read, Skill, Write, Edit
 skills:
-  - patent-challenger
+  - disclosure-challenger
 maxTurns: 20
 effort: high
 color: red

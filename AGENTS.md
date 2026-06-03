@@ -93,12 +93,12 @@
 
 | Agent | 预加载 Skills | 用途 | maxTurns |
 |-------|-------------|------|----------|
-| disclosure-agent | patent-tech-disclosure, patent-challenger, utils-document-reviewer, utils-innovation-checker | 交底书生成/完善/质疑循环 | 60 |
-| patent-drafting-agent | patent-claims-writing, patent-patent-writing, patent-challenger | 专利撰写管线（权利要求→说明书→全套） | 100 |
-| prosecution-agent | patent-office-action-response, patent-claims-review-and-amendment, patent-reexamination-response, patent-law-reference | 审查答复管线 | 60 |
+| disclosure-agent | tech-disclosure, disclosure-challenger, utils-document-reviewer, utils-innovation-checker | 交底书生成/完善/质疑循环 | 60 |
+| patent-drafting-agent | disclosure-challenger | 专利撰写管线（权利要求→说明书→全套） | 100 |
+| prosecution-agent | oa-response, reexamination-response | 审查答复管线 | 60 |
 | batch-patent-generator | paper-engineering-paper, paper-science-paper, paper-economy-paper | 批量前置：论文生成+创意挖掘 | 100 |
-| single-creative-generator | patent-patent-writing, patent-product-plan, technical-tech-solution, patent-operation-plan, patent-ip-strategy | 单创意全套生成（专利+4种方案） | 200 |
-| patent-challenger-agent | patent-challenger | 对抗式质疑 | 20 |
+| single-creative-generator | product-plan, technical-tech-solution, operation-plan, ip-strategy | 单创意全套生成（专利+4种方案） | 200 |
+| patent-challenger-agent | disclosure-challenger | 对抗式质疑 | 20 |
 | document-reviewer-agent | utils-document-reviewer, utils-innovation-checker | 结构化质量审核 | 20 |
 
 ### 4.2 Skill 分类
@@ -106,21 +106,14 @@
 #### 专利文档类
 | Skill | 用途 |
 |-------|------|
-| patent-tech-disclosure | 技术交底书（生成/完善） |
-| patent-claims-writing | 权利要求书 |
-| patent-patent-writing | 全套专利申请文件 |
-| patent-office-action-response | 答复审查意见 |
-| patent-claims-review-and-amendment | 权利要求审查与修改 |
-| patent-reexamination-response | 驳回复审分析 |
-| patent-divisional-analysis | 分案布局分析 |
-| patent-innovation-splitter | 创新点智能切分 |
-| patent-traceability-mapping | 权利要求溯源映射表 |
-| patent-business-analysis | 商业价值分析 |
-| patent-ip-strategy | IP 保护策略 |
-| patent-product-plan | 产品方案 |
-| patent-operation-plan | 运营方案 |
-| patent-classification-reference | 关键数字技术专利分类匹配 |
-| patent-law-reference | 专利法律参考 |
+| tech-disclosure | 技术交底书（生成/完善） |
+| oa-response | 答复审查意见 |
+| reexamination-response | 驳回复审分析 |
+| patent-divisional-analysis | 分案布局分析（含创新点识别、切分、评估、布局全链路） |
+| business-analysis | 商业价值分析 |
+| ip-strategy | IP 保护策略 |
+| product-plan | 产品方案 |
+| operation-plan | 运营方案 |
 | patent-us-review | 美标专利评审 |
 
 #### 技术文档类
@@ -146,7 +139,7 @@
 | pdf | PDF 文档处理 |
 | docx | Word 文档处理 |
 | pptx | PowerPoint 文档处理 |
-| patent-challenger | 专利质疑技能 |
+| disclosure-challenger | 专利质疑技能 |
 | utils-document-reviewer | 文档审核执行器 |
 | utils-innovation-checker | 创新性与重复度检测 |
 | interactive-report | 交互式报告 |
@@ -246,11 +239,13 @@ delegate_task(
 
 ## 6. 专利撰写后自动串联溯源映射表
 
+> **注意**：`patent-traceability-mapping` skill 目录暂未创建。本节保留流程定义，待 skill 创建后启用。
+
 当 patent-drafting-agent 子代理返回的摘要中包含全套专利文件路径时（phase=full 或 phase=abstract 成功），主 Agent **自动追加一步**：
 
 ```python
 delegate_task(
-    goal="生成权利要求溯源映射表。第一步：Read /app/patent-hermes-agent/skills/patent-traceability-mapping/SKILL.md，严格按其中的流程执行。传入权利要求书、说明书、原始输入文件三份路径。",
+    goal="生成权利要求溯源映射表。传入权利要求书、说明书、原始输入文件三份路径。",
     context="权利要求书路径：{claims_path}。说明书路径：{spec_path}。原始输入路径：{input_path}。工作目录：/app/patent-hermes-agent。输出目录：output/",
     toolsets=["terminal", "file"]
 )

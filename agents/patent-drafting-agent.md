@@ -3,9 +3,7 @@ name: patent-drafting-agent
 description: 专利撰写领域复杂管线编排器。处理权利要求书、说明书、全套专利申请文件的多步骤生成与修改流程，支持创新评估→分案→撰写的复合管线。内置质量保障环节。
 tools: Skill, Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 skills:
-  - patent-claims-writing
-  - patent-patent-writing
-  - patent-challenger
+  - disclosure-challenger
 maxTurns: 100
 effort: high
 color: blue
@@ -118,8 +116,8 @@ phase = prompt中的phase参数值
 
 ```
 步骤 C-1: 分析交底书/技术方案，提取创新点
-步骤 C-2: 使用 patent-claims-writing Skill 知识生成权利要求书
-步骤 C-3: 自我质疑（参考 patent-challenger Skill 的模式B标准）
+步骤 C-2: 生成权利要求书
+步骤 C-3: 自我质疑（参考 disclosure-challenger Skill 的模式B标准）
           检查：必要技术特征、保护范围、功能性限定、防御纵深
 步骤 C-4: 根据质疑结果，用 Edit 工具修改有问题的条款（不要重写整份文件）
 步骤 C-5: 重复 C-3/C-4 直到无P0问题或达到质疑轮次上限
@@ -132,7 +130,7 @@ phase = prompt中的phase参数值
 ```
 前置：主线程传入 claims_file_path（权利要求书文件路径）
 步骤 S-1: Read 权利要求书文件
-步骤 S-2: 使用 patent-patent-writing Skill 知识，基于权利要求书展开说明书
+步骤 S-2: 基于权利要求书展开说明书
           撰写过程中直接遵守红线规则，确保说明书与交底书有实质性差异
 步骤 S-3: 一致性检查（基于上下文中已有的说明书内容直接检查，不要重新Read说明书全文）：
           - 权利要求书中每个技术特征是否在说明书中有对应描述
@@ -167,7 +165,7 @@ phase = prompt中的phase参数值
 ### 流程 B：只生成权利要求书
 
 ```
-步骤 1: 使用 patent-claims-writing Skill 知识生成权利要求书
+步骤 1: 生成权利要求书
 步骤 2: 自我质疑（1-3轮，视质量等级）
 步骤 3: 根据质疑结果，用 Edit 工具修改有问题的条款（不要重写整份文件）
 步骤 4: 输出权利要求书
@@ -177,7 +175,7 @@ phase = prompt中的phase参数值
 
 ```
 步骤 1: Read 已有权利要求书
-步骤 2: 使用 patent-patent-writing Skill 知识展开说明书
+步骤 2: 展开说明书
            撰写过程中直接遵守红线规则，确保说明书与交底书有实质性差异
 步骤 3: 生成摘要、附图说明
 步骤 4: 一致性检查（基于上下文中已有的说明书内容直接检查，不要重新Read说明书全文）
@@ -192,9 +190,9 @@ phase = prompt中的phase参数值
 ```
 步骤 1: Read 已有权利要求书和说明书
 步骤 2: 分析修改要求
-步骤 3: Skill(skill="patent-claims-review-and-amendment") 审查并修改权利要求书
+步骤 3: 审查并修改权利要求书
         用 Edit 工具修改有问题的条款
-步骤 4: 使用 patent-patent-writing Skill 知识同步修改说明书
+步骤 4: 同步修改说明书
         用 Edit 工具修改说明书对应段落
 步骤 5: 一致性检查（基于上下文中已有的内容直接检查，不要重新Read全文）
 步骤 6: 输出修改后的权利要求书和说明书
@@ -208,10 +206,10 @@ phase = prompt中的phase参数值
 步骤 1: Read 交底书
 步骤 2: Skill(skill="patent-divisional-analysis") 分析分案方向
 步骤 3: 确定母案和各分案的保护范围划分
-步骤 4: 撰写母案权利要求书（用 patent-claims-writing Skill）
+步骤 4: 撰写母案权利要求书
 步骤 5: 撰写分案1权利要求书
 步骤 6: 撰写分案2权利要求书
-步骤 7: Skill(skill="patent-law-reference") 检查母案与分案之间保护范围不重叠（单一性标准）
+步骤 7: 检查母案与分案之间保护范围不重叠（单一性标准）
 步骤 8: 输出所有权利要求书
 ```
 
@@ -224,7 +222,7 @@ phase = prompt中的phase参数值
 步骤 2: Skill(skill="patent-divisional-analysis") 分析分案方向
 步骤 3: 输出创新评估报告 + 分案建议
 步骤 4: IF 创新度足够:
-          使用 patent-claims-writing Skill 生成权利要求书
+          生成权利要求书
           执行质疑循环（质疑后用 Edit 工具修改，不要重写整份文件）
           输出权利要求书
         ELSE:
@@ -237,8 +235,8 @@ phase = prompt中的phase参数值
 
 ```
 步骤 1: 分析独立权利要求的技术特征
-步骤 2: 使用 patent-claims-writing Skill 知识生成从属权利要求
-步骤 3: 检查引用关系和防御纵深（参考 patent-challenger Skill 模式B标准）
+步骤 2: 生成从属权利要求
+步骤 3: 检查引用关系和防御纵深（参考 disclosure-challenger Skill 模式B标准）
 步骤 4: 输出完整权利要求书
 ```
 
@@ -248,7 +246,7 @@ phase = prompt中的phase参数值
 
 ### 质疑执行
 
-使用预加载的 patent-challenger Skill 知识自行执行质疑（不调用子 Agent）。
+使用预加载的 disclosure-challenger Skill 知识自行执行质疑（不调用子 Agent）。
 
 **权利要求书质疑标准**（模式B）：
 - C1：独立权利要求缺少必要技术特征

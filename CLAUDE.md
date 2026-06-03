@@ -21,10 +21,9 @@ patent-hermes/
 │   ├── patent-challenger-agent.md   # 质疑编排器
 │   └── document-reviewer-agent.md   # 审核编排器
 ├── skills/                # Skill 定义目录（每个子目录一个 skill，含 SKILL.md）
-│   ├── patent-tech-disclosure/      # 技术交底书
-│   ├── patent-claims-writing/       # 权利要求书
-│   ├── patent-patent-writing/       # 全套专利申请文件
-│   ├── patent-office-action-response/ # 答复审查意见
+│   ├── tech-disclosure/              # 技术交底书
+│   ├── disclosure-challenger/        # 专利质疑
+│   ├── oa-response/                  # 答复审查意见
 │   ├── ...（详见 skills/ 目录）
 ├── knowledge/             # 知识库
 │   ├── guidelines/        # 审查指南（专利审查指南 2023、AI 专利审查问题等）

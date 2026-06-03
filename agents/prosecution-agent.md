@@ -3,10 +3,8 @@ name: prosecution-agent
 description: 审查答复领域复杂管线编排器。处理审查意见通知书分析、意见陈述书撰写、权利要求修改、驳回复审分析等多步骤流程。
 tools: Skill, Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 skills:
-  - patent-office-action-response
-  - patent-claims-review-and-amendment
-  - patent-reexamination-response
-  - patent-law-reference
+  - oa-response
+  - reexamination-response
 maxTurns: 60
 effort: high
 color: yellow
@@ -70,10 +68,10 @@ color: yellow
         - 权利要求得不到说明书支持？
         - 修改超范围？
 步骤 4: TodoWrite → "修改权利要求" in_progress
-步骤 5: 使用 patent-claims-review-and-amendment Skill 知识修改权利要求
-        确保修改不超出原申请范围（参考 patent-law-reference Skill 第33条）
+步骤 5: 修改权利要求书
+        确保修改不超出原申请范围
 步骤 6: TodoWrite → "撰写意见陈述书" in_progress
-步骤 7: 使用 patent-office-action-response Skill 知识撰写意见陈述书
+步骤 7: 使用 oa-response Skill 知识撰写意见陈述书
 步骤 8: 检查意见陈述书与权利要求修改的一致性
 步骤 9: 输出：意见陈述书 + 修改后权利要求书 + 修改对照表
 ```
@@ -119,7 +117,7 @@ color: yellow
 
 ```
 步骤 1: Read 驳回决定 + 原申请文件 + 历次答复
-步骤 2: 使用 patent-reexamination-response Skill 知识分析：
+步骤 2: 使用 reexamination-response Skill 知识分析：
         - 驳回理由是否充分？
         - 是否还有未尝试的修改方向？
         - 复审成功概率评估
@@ -135,7 +133,7 @@ color: yellow
 
 ```
 步骤 1: Read 修改后的权利要求书 + 审查意见通知书
-步骤 2: 使用 patent-office-action-response Skill 知识撰写意见陈述书
+步骤 2: 使用 oa-response Skill 知识撰写意见陈述书
 步骤 3: 确保意见陈述书针对每个审查意见的驳回理由逐条答复
 步骤 4: 输出意见陈述书
 ```

@@ -5,11 +5,10 @@ model: inherit
 color: blue
 tools: Skill, Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 skills:
-  - patent-patent-writing
-  - patent-product-plan
+  - product-plan
   - technical-tech-solution
-  - patent-operation-plan
-  - patent-ip-strategy
+  - operation-plan
+  - ip-strategy
 maxTurns: 200
 effort: high
 ---
@@ -38,7 +37,7 @@ effort: high
    - Read("{base_dir}/科技论文_{timestamp}.md")
    - Read("{base_dir}/经济论文_{timestamp}.md")
 
-2. 使用 `Skill(skill="patent-patent-writing")` 生成全套专利申请文件（共3个部分文件）：
+2. 生成全套专利申请文件（共3个部分文件）：
    - Write 到 `{创意目录}/权利要求书_{创意标题}.md`
    - Write 到 `{创意目录}/说明书_{创意标题}.md`
    - Write 到 `{创意目录}/摘要与附图说明__{创意标题}.md`
@@ -53,10 +52,10 @@ effort: high
 
 然后使用对应 Skill 逐一生成：
 
-- `Skill(skill="patent-product-plan")` → Write 到 `{创意目录}/产品方案_{创意标题}.md`
+- `Skill(skill="product-plan")` → Write 到 `{创意目录}/产品方案_{创意标题}.md`
 - `Skill(skill="technical-tech-solution")` → Write 到 `{创意目录}/技术方案_{创意标题}.md`
-- `Skill(skill="patent-operation-plan")` → Write 到 `{创意目录}/运营方案_{创意标题}.md`
-- `Skill(skill="patent-ip-strategy")` → Write 到 `{创意目录}/IP保护策略_{创意标题}.md`
+- `Skill(skill="operation-plan")` → Write 到 `{创意目录}/运营方案_{创意标题}.md`
+- `Skill(skill="ip-strategy")` → Write 到 `{创意目录}/IP保护策略_{创意标题}.md`
 
 ---
 

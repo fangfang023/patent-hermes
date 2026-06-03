@@ -3,8 +3,8 @@ name: disclosure-agent
 description: 交底书领域复杂工作流编排器。处理技术交底书的生成、完善、审核等多步骤流程，内置质疑循环保障文档质量。当任务涉及交底书的多轮迭代时使用此 Agent。
 tools: Skill, Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 skills:
-  - patent-tech-disclosure
-  - patent-challenger
+  - tech-disclosure
+  - disclosure-challenger
   - utils-document-reviewer
   - utils-innovation-checker
 maxTurns: 60
@@ -64,7 +64,7 @@ color: cyan
 
 ```
 步骤 1：TodoWrite 更新 → "生成交底书" in_progress
-步骤 2：使用 patent-tech-disclosure Skill 知识生成交底书
+步骤 2：使用 tech-disclosure Skill 知识生成交底书
         Write 到目标路径
 步骤 3：执行质疑循环（见下方"质疑循环"）
 步骤 4：输出最终文档 + 汇总报告
@@ -75,7 +75,7 @@ color: cyan
 ```
 步骤 1：Read 已有交底书文档
 步骤 2：分析用户提出的具体问题/修改要求
-步骤 3：使用 patent-tech-disclosure Skill 知识，针对性修改
+步骤 3：使用 tech-disclosure Skill 知识，针对性修改
         Edit 修改已有文档
 步骤 4：执行质疑循环（如果用户要求或质量等级为"高"）
 步骤 5：输出修改后文档 + 修改说明
@@ -101,7 +101,7 @@ color: cyan
 
 ### 执行方式
 
-**重要**：质疑通过预加载的 patent-challenger Skill 知识自行执行，不调用 patent-challenger-agent（子 Agent 不能嵌套）。
+**重要**：质疑通过预加载的 disclosure-challenger Skill 知识自行执行，不调用 patent-challenger-agent（子 Agent 不能嵌套）。
 
 ```
 round = 0
@@ -110,7 +110,7 @@ max_rounds = 质量等级决定（标准=1，高=3）
 WHILE round < max_rounds:
   round += 1
 
-  # 1. 使用 patent-challenger Skill 的质疑标准进行自我质疑
+  # 1. 使用 disclosure-challenger Skill 的质疑标准进行自我质疑
   #    参考 Skill 中定义的六大问题（技术问题聚焦、方案空洞、实施例流程等）
   质疑结果 = 分析当前文档，识别 P0/P1 问题
 
@@ -136,7 +136,7 @@ IF round == max_rounds AND 仍有P0问题:
 
 ### 质疑标准来源
 
-质疑时参考 patent-challenger Skill 中定义的标准：
+质疑时参考 disclosure-challenger Skill 中定义的标准：
 - **P0 问题**：技术方案空洞、实施例流程空洞、技术深度分析缺失
 - **P1 问题**：词语堆砌、数据流转不清晰、技术问题不聚焦
 - 质疑必须具体，禁止笼统表述（如"描述不够详细"）
